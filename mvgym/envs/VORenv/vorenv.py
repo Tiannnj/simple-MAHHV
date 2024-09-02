@@ -745,6 +745,7 @@ class vorenv(gym.Env):
                     # Generate the final ddl information
                     # np.array(list(self.r_m_new()))[v, 5] = np.array(list(self.o_v_new.values()))[v, 5] - rm_total_delay
                     r_ddl[r_agent_num] = r_ddl[r_agent_num] + r_pre_state[3 + v * 3 + 2] - rm_total_delay
+                    print('r_agent_num', r_agent_num, r_ddl[r_agent_num], r_ddl)
 
             # The fairness in the RU observation state has to be changed
             self.r_assign[r_agent_num] = num_r_rtr[r_agent_num]
@@ -774,7 +775,7 @@ class vorenv(gym.Env):
 
         # Generate the total reward
         rewards = rewards_ou + rewards_ru
-        # print('rewards', rewards)
+        print('rewards', rewards)
 
         # Adjust new environmental information
         self.Mahhv_reset()

@@ -256,13 +256,13 @@ def get_config():
     parser.add_argument(
         "--hidden_size",
         type=int,
-        default=64,
+        default=256,
         help="Dimension of hidden layers for actor/critic networks",
     )
     parser.add_argument(
         "--layer_N",
         type=int,
-        default=1,
+        default=3,
         help="Number of layers for actor/critic networks",
     )
     parser.add_argument("--use_ReLU", action="store_false", default=True, help="Whether to use ReLU")
