@@ -59,12 +59,12 @@ class vorenv(gym.Env):
         # init RU in each time step, RU can observe itself's location, the vehicles info in it range, number of tasks assigned to RSU associated to it, RSU service fairness
         self.n_r_agents = 4
         self.r_location = np.array([[100, 0, 50], [200, 0, 50], [300, 0, 50], [400, 0, 50]])
-
-        self.r_v = np.concatenate(([np.array(list(self.v_info.values()))[0:6, 3:6].reshape(-1)], [np.array(list(self.v_info.values()))[0:6, 3:6].reshape(-1)],
-                                   [np.array(list(self.v_info.values()))[4:10, 3:6].reshape(-1)], [np.array(list(self.v_info.values()))[4:10, 3:6].reshape(-1)]))
+        self.r_v = np.concatenate(([np.array(list(self.v_info.values()))[0:3, 3:6].reshape(-1)], [np.array(list(self.v_info.values()))[2:5, 3:6].reshape(-1)],
+                                   [np.array(list(self.v_info.values()))[5:8, 3:6].reshape(-1)], [np.array(list(self.v_info.values()))[7:10, 3:6].reshape(-1)]))
+        self.r_received = np.array([[0, 0], [0, 0], [0, 0], [0, 0]])
         self.r_assign = np.array([[0, 0], [0, 0], [0, 0], [0, 0]])
         self.r_info = {_: np.concatenate((self.r_location[_], self.r_v[_],  self.r_assign[_])) for _ in range(self.n_r_agents)}
-        self.ru_action_space = MultiAgentActionSpace([spaces.Discrete(6 + 2) for _ in range(self.n_r_agents)])
+        self.ru_action_space = MultiAgentActionSpace([spaces.Discrete(4) for _ in range(self.n_r_agents)])
 
 
         # init RSU in each time step, RSU can observe itself's location, RSU’s CPU frequency
@@ -120,72 +120,6 @@ class vorenv(gym.Env):
         x[i] = 1
         return x.tolist()
 
-    def get_agent_obs(self):
-        """
-        When input to a model, each agent is represented by a set of one-hot binary vectors {i, t, l, h, c}
-        encoding its unique ID, team ID, location, health points and cooldown.
-        A model controlling an agent also sees other agents in its visual range (5 × 5 surrounding area).
-        :return:
-        """
-        _obs = []
-        total_obs = []
-        for agent_i in range(self.n_agents):
-            pos = self.agent_pos[agent_i]
-
-            # _agent_i_obs = self._one_hot_encoding(agent_i, self.n_agents)
-            # _agent_i_obs += [pos[0] / self._grid_shape[0], pos[1] / (self._grid_shape[1] - 1)]  # coordinates
-            # _agent_i_obs += [self.agent_health[agent_i]]
-            # _agent_i_obs += [1 if self._agent_cool else 0]  # flag if agent is cooling down
-
-            # team id , unique id, location,health, cooldown
-
-            _agent_i_obs = np.zeros((6, 5, 5))
-            for row in range(0, 5):
-                for col in range(0, 5):
-
-                    if self.is_valid([row + (pos[0] - 2), col + (pos[1] - 2)]) and (
-                            PRE_IDS['empty'] not in self._full_obs[row + (pos[0] - 2)][col + (pos[1] - 2)]):
-                        x = self._full_obs[row + pos[0] - 2][col + pos[1] - 2]
-                        _type = 1 if PRE_IDS['agent'] in x else -1
-                        _id = int(x[1:]) - 1  # id
-                        _agent_i_obs[0][row][col] = _type
-                        _agent_i_obs[1][row][col] = _id
-#                         print('type', type, '_type', _type)
-                        _agent_i_obs[2][row][col] = self.agent_health[_id] if _type == 1 else self.opp_health[_id]
-                        _agent_i_obs[3][row][col] = self._agent_cool[_id] if _type == 1 else self._opp_cool[_id]
-                        _agent_i_obs[3][row][col] = 1 if _agent_i_obs[3][row][col] else -1  # cool/uncool
-
-                        _agent_i_obs[4][row][col] = pos[0] / self._grid_shape[0]  # x-coordinate
-                        _agent_i_obs[5][row][col] = pos[1] / self._grid_shape[1]  # y-coordinate
-
-            _agent_i_obs = _agent_i_obs.flatten().tolist()
-            _obs.append(_agent_i_obs)
-
-        # 每个OU状态生成
-        for agent_o in range(self.n_o_agents):
-            _agent_o_obs = np.zeros(43)
-            _agent_o_obs[0: 3] = self.o_location[agent_o]   # OU location
-#            print('agent_o', agent_o)
-            _agent_o_obs[3: 39] = self.o_v[agent_o]     # tasks' information
-            _agent_o_obs[39: 41] = self.o_receive.flatten()
-            _agent_o_obs[41: 43] = self.o_tra[agent_o]   # number of tasks assigned to RU
-            _agent_o_obs = _agent_o_obs.flatten().tolist()
-            total_obs.append(_agent_o_obs)
-#            print(' _agent_o_obs', _agent_o_obs)
-
-        # 每个RU状态生成
-        for agent_r in range(self.n_r_agents):
-            _agent_r_obs = np.zeros(43)
-            _agent_r_obs[0: 3] = self.m_location[agent_r]   # RU location
-            _agent_r_obs[3: 21] = self.r_v[agent_r]     # tasks' information
-            _agent_r_obs[21: 23] = self.r_assign[agent_r]    # number of tasks assigned to RSU associated to it
-            _agent_r_obs = _agent_r_obs.flatten().tolist()
-            total_obs.append(_agent_r_obs)
-#            print('_agent_r_obs', _agent_r_obs)
-
-#        print('_obs', _obs)
-#        print('total_obs', total_obs)
-        return _obs
 
     def Mahhv_get_agent_obs(self):
         """
@@ -196,36 +130,6 @@ class vorenv(gym.Env):
         """
         _obs = []
         total_obs = []
-        for agent_i in range(self.n_agents):
-            pos = self.agent_pos[agent_i]
-
-            # _agent_i_obs = self._one_hot_encoding(agent_i, self.n_agents)
-            # _agent_i_obs += [pos[0] / self._grid_shape[0], pos[1] / (self._grid_shape[1] - 1)]  # coordinates
-            # _agent_i_obs += [self.agent_health[agent_i]]
-            # _agent_i_obs += [1 if self._agent_cool else 0]  # flag if agent is cooling down
-
-            # team id , unique id, location,health, cooldown
-
-            _agent_i_obs = np.zeros((6, 5, 5))
-            for row in range(0, 5):
-                for col in range(0, 5):
-                    if self.is_valid([row + (pos[0] - 2), col + (pos[1] - 2)]) and (
-                            PRE_IDS['empty'] not in self._full_obs[row + (pos[0] - 2)][col + (pos[1] - 2)]):
-                        x = self._full_obs[row + pos[0] - 2][col + pos[1] - 2]
-                        _type = 1 if PRE_IDS['agent'] in x else -1
-                        _id = int(x[1:]) - 1  # id
-                        _agent_i_obs[0][row][col] = _type
-                        _agent_i_obs[1][row][col] = _id
-                        #                         print('type', type, '_type', _type)
-                        _agent_i_obs[2][row][col] = self.agent_health[_id] if _type == 1 else self.opp_health[_id]
-                        _agent_i_obs[3][row][col] = self._agent_cool[_id] if _type == 1 else self._opp_cool[_id]
-                        _agent_i_obs[3][row][col] = 1 if _agent_i_obs[3][row][col] else -1  # cool/uncool
-
-                        _agent_i_obs[4][row][col] = pos[0] / self._grid_shape[0]  # x-coordinate
-                        _agent_i_obs[5][row][col] = pos[1] / self._grid_shape[1]  # y-coordinate
-
-            _agent_i_obs = _agent_i_obs.flatten().tolist()
-            _obs.append(_agent_i_obs)
 
         # 每个OU状态生成
         for agent_o in range(self.n_o_agents):
@@ -240,7 +144,7 @@ class vorenv(gym.Env):
         # 每个RU状态生成
         for agent_r in range(self.n_r_agents):
             _agent_r_obs = np.zeros(43)
-            _agent_r_obs[0: 3] = self.m_location[agent_r]  # RU location
+            _agent_r_obs[0: 3] = self.r_location[agent_r]  # RU location
             _agent_r_obs[3: 21] = self.r_v[agent_r]  # tasks' information
             _agent_r_obs[21: 23] = self.r_assign[agent_r]  # number of tasks assigned to RSU associated to it
             _agent_r_obs = _agent_r_obs.flatten().tolist()

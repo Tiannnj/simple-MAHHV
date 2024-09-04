@@ -9,13 +9,13 @@ class MahhvEnvCore(object):
     """
 
     def __init__(self):
-        self.agent_num = 6  # 设置智能体(小飞机)的个数，这里设置为两个 # set the number of agents(aircrafts), here set to two
+        self.agent_num = 4  # 设置智能体(小飞机)的个数，这里设置为两个 # set the number of agents(aircrafts), here set to two
         team_size = self.agent_num
         grid_size = (15, 15)
         self.env = vorenv(grid_shape=grid_size, n_agents=team_size, n_opponents=team_size)
-        self.obs_dim = 43  # 设置智能体的观测维度 # set the observation dimension of agents
+        self.obs_dim = 14  # 设置智能体的观测维度 # set the observation dimension of agents
         self.ou_obs_dim = 43
-        self.ru_obs_dim = 43
+        self.ru_obs_dim = 14
         self.action_dim = self.env.action_space[0].n  # 设置智能体的动作维度，这里假定为一个五个维度的 # set the action dimension of agents, here set to a five-dimensional
         self.ou_action_dim = self.env.ou_action_space[0].n
         self.ru_action_dim = self.env.ru_action_space[0].n

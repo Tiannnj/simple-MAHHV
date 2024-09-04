@@ -42,10 +42,7 @@ class MahhvDiscreteActionEnv(object):
         
         for agent_idx in range(self.num_agent):
             # physical action space
-            if agent_idx < 4:
-                u_action_space = spaces.Discrete(self.o_action_dim)  # ou的动作空间
-            else:
-                u_action_space = spaces.Discrete(self.r_action_dim)  # ru的动作空间
+            u_action_space = spaces.Discrete(self.r_action_dim)  # ou的动作空间
 #            print('total_action_space[agent_idx]',u_action_space)
 
             self.action_space.append(u_action_space)
