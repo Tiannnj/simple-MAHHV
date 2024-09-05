@@ -36,8 +36,6 @@ class vorenv(gym.Env):
         self.n_v = n_v
         self.n_o_agents = n_o_agents
         self.n_r_agents = n_r_agents
-
-
         self.action_space = MultiAgentActionSpace(
             [spaces.Discrete(8) for _ in range(self.n_o_agents)] + [spaces.Discrete(8) for _ in range(self.n_r_agents)])
 
@@ -59,13 +57,12 @@ class vorenv(gym.Env):
         # init RU in each time step, RU can observe itself's location, the vehicles info in it range, number of tasks assigned to RSU associated to it, RSU service fairness
         self.n_r_agents = 4
         self.r_location = np.array([[100, 0, 50], [200, 0, 50], [300, 0, 50], [400, 0, 50]])
-        self.r_v = np.concatenate(([np.array(list(self.v_info.values()))[0:3, 3:6].reshape(-1)], [np.array(list(self.v_info.values()))[2:5, 3:6].reshape(-1)],
-                                   [np.array(list(self.v_info.values()))[5:8, 3:6].reshape(-1)], [np.array(list(self.v_info.values()))[7:10, 3:6].reshape(-1)]))
+        self.r_v = np.concatenate(([np.array(list(self.v_info.values()))[0:3, 0:6].reshape(-1)], [np.array(list(self.v_info.values()))[2:5, 0:6].reshape(-1)],
+                                   [np.array(list(self.v_info.values()))[5:8, 0:6].reshape(-1)], [np.array(list(self.v_info.values()))[7:10, 0:6].reshape(-1)]))
         self.r_received = np.array([[0, 0], [0, 0], [0, 0], [0, 0]])
         self.r_assign = np.array([[0, 0], [0, 0], [0, 0], [0, 0]])
-        self.r_info = {_: np.concatenate((self.r_location[_], self.r_v[_],  self.r_assign[_])) for _ in range(self.n_r_agents)}
+        self.r_info = {_: np.concatenate((self.r_location[_], self.r_v[_], self.r_received[_], self.r_assign[_])) for _ in range(self.n_r_agents)}
         self.ru_action_space = MultiAgentActionSpace([spaces.Discrete(4) for _ in range(self.n_r_agents)])
-
 
         # init RSU in each time step, RSU can observe itself's location, RSU’s CPU frequency
         self.n_MeNB = 8
@@ -74,26 +71,6 @@ class vorenv(gym.Env):
         self.m_cpu = np.array([[250], [300], [250], [300],
                       [250], [300], [250], [300]])
 
-
-        self.agent_pos = {_: None for _ in range(self.n_agents)}
-        self.agent_prev_pos = {_: None for _ in range(self.n_agents)}
-        self.opp_pos = {_: None for _ in range(self.n_agents)}
-        self.opp_prev_pos = {_: None for _ in range(self.n_agents)}
-
-        self._init_health = init_health
-        self.agent_health = {_: None for _ in range(self.n_agents)}
-        self.opp_health = {_: None for _ in range(self._n_opponents)}
-        self._agent_dones = [None for _ in range(self.n_agents)]
-        self._agent_cool = {_: None for _ in range(self.n_agents)}
-        self._opp_cool = {_: None for _ in range(self._n_opponents)}
-        self._total_episode_reward = None
-        self.viewer = None
-        self.full_observable = full_observable
-
-        # # 5 * 5 * (type, id, health, cool, x, y)
-        # self._obs_low = np.repeat([-1., 0., 0., -1., 0., 0.], 5 * 5)
-        # self._obs_high = np.repeat([1., n_opponents, init_health, 1., 1., 1.], 5 * 5) 
-        # observation space for OU
         self._obs_low = np.repeat([-10000], 43)
         self._obs_high = np.repeat([10000], 43)
         self.observation_space = MultiAgentObservationSpace([spaces.Box(self._obs_low, self._obs_high) for _ in range(self.n_agents)])
@@ -139,18 +116,18 @@ class vorenv(gym.Env):
             _agent_o_obs[39: 41] = self.o_receive[:].flatten() # number of tasks received by both OU
             _agent_o_obs[41: 43] = self.o_tra[agent_o]  # number of tasks assigned to RU by each OU
             _agent_o_obs = _agent_o_obs.flatten().tolist()
-            total_obs.append(_agent_o_obs)
+            # total_obs.append(_agent_o_obs)
 
         # 每个RU状态生成
         for agent_r in range(self.n_r_agents):
-            _agent_r_obs = np.zeros(43)
+            _agent_r_obs = np.zeros(25)
             _agent_r_obs[0: 3] = self.r_location[agent_r]  # RU location
             _agent_r_obs[3: 21] = self.r_v[agent_r]  # tasks' information
-            _agent_r_obs[21: 23] = self.r_assign[agent_r]  # number of tasks assigned to RSU associated to it
+            _agent_r_obs[21: 23] = self.r_received[agent_r]  # number of tasks assigned to RSU associated to it
+            _agent_r_obs[23: 25] = self.r_assign[agent_r]
             _agent_r_obs = _agent_r_obs.flatten().tolist()
             total_obs.append(_agent_r_obs)
         return total_obs
-
 
     def __create_grid(self):
         _grid = [[PRE_IDS['empty'] for _ in range(self._grid_shape[1])] for row in range(self._grid_shape[0])]
@@ -171,47 +148,6 @@ class vorenv(gym.Env):
         """ Each team consists of m = 10 agents and their initial positions are sampled uniformly in a 5 × 5
         square.
         """
-        self._full_obs = self.__create_grid()
-
-        # select agent team center
-        # Note : Leaving space from edges so as to have a 5x5 grid around it
-        agent_team_corner = random.randint(0, int(self._grid_shape[0] / 2)), random.randint(0, int(self._grid_shape[1] / 2))
-        agent_pos_index = random.sample(range(25), self.n_agents)
-        # randomly select agent pos
-        for agent_i in range(self.n_agents):
-            pos = [int(agent_pos_index[agent_i] / 5) + agent_team_corner[0], agent_pos_index[agent_i] % 5 + agent_team_corner[1]]
-#             print(pos)
-            while True:
-                if self._full_obs[pos[0]][pos[1]] == PRE_IDS['empty']:
-                    self.agent_prev_pos[agent_i] = pos
-                    self.agent_pos[agent_i] = pos
-                    self.__update_agent_view(agent_i)
-                    break
-                pos = [random.randint(agent_team_corner[0], agent_team_corner[0] + 4),
-                       random.randint(agent_team_corner[1], agent_team_corner[1] + 4)]
-
-        # select opponent team center
-        while True:
-            pos = random.randint(agent_team_corner[0], self._grid_shape[0] - 5), random.randint(agent_team_corner[1], self._grid_shape[1] - 5)
-            if self._full_obs[pos[0]][pos[1]] == PRE_IDS['empty']:
-                opp_team_corner = pos
-                break
-                
-        opp_pos_index = random.sample(range(25), self._n_opponents)
-
-        # randomly select opponent pos
-        for opp_i in range(self._n_opponents):
-            pos = [int(opp_pos_index[agent_i] / 5) + opp_team_corner[0], opp_pos_index[agent_i] % 5 + opp_team_corner[1]]
-            while True:
-                if self._full_obs[pos[0]][pos[1]] == PRE_IDS['empty']:
-                    self.opp_prev_pos[opp_i] = pos
-                    self.opp_pos[opp_i] = pos
-                    self.__update_opp_view(opp_i)
-                    break
-                pos = [random.randint(opp_team_corner[0], opp_team_corner[0] + 4),
-                       random.randint(opp_team_corner[1], opp_team_corner[1] + 4)]
-
-        self.__draw_base_img()
 
         # initial the Env's information
         total_obs = []
@@ -219,50 +155,26 @@ class vorenv(gym.Env):
         for agent_o in range(self.n_o_agents):
             _agent_o_obs = np.zeros(43)
             _agent_o_obs[0: 3] = self.o_location[agent_o]   # OU location
-#            print('agent_o', agent_o)
             _agent_o_obs[3: 39] = self.o_v[agent_o]     # tasks' information
             _agent_o_obs[39: 41] = self.o_tra[agent_o]   # number of tasks assigned to RU
             _agent_o_obs[41] = 0    # OU service fairness
             _agent_o_obs[42] = 0    # RU offloaded fairness
             _agent_o_obs = _agent_o_obs.flatten().tolist()
-            total_obs.append(_agent_o_obs)
-#            print(' _agent_o_obs', _agent_o_obs)
+            # total_obs.append(_agent_o_obs)
 
         # 每个RU状态生成
         for agent_r in range(self.n_r_agents):
-            _agent_r_obs = np.zeros(24)
-            _agent_r_obs[0: 3] = self.m_location[agent_r]   # RU location
-            _agent_r_obs[3: 21] = self.r_v[agent_r]     # tasks' information
-            _agent_r_obs[21:23] = self.r_assign[agent_r]    # number of tasks assigned to RSU associated to it
-            _agent_r_obs[23: 34] = self.r_fairness[agent_r]     # RSU service fairness
-            _agent_r_obs = _agent_r_obs.flatten().tolist()
+            _agent_r_obs = np.zeros(25)
+            _agent_r_obs[0: 3] = self.r_location[agent_r]  # RU location
+            _agent_r_obs[3: 21] = self.r_v[agent_r]  # tasks' information
+            _agent_r_obs[21: 23] = self.r_received[agent_r]  # number of tasks assigned to RSU associated to it
+            _agent_r_obs[23: 25] = self.r_assign[agent_r]
             total_obs.append(_agent_r_obs)
 #            print('_agent_r_obs', _agent_r_obs)
 
         inital_bos = total_obs
         return inital_bos
 
-
-    def reset(self):
-        # UAV initial state, including 
-        # Vehicles' locations, task information;
-        # OUs' locations, total bandwidth for receiving and offloading tasks(evenly allocation), OU service fairness
-        # RUs' locations, total bandwidht for offloading tasks(finish bandwidth allocation)
-        
-        # initial count
-        self._step_count = 0
-        self._total_episode_reward = [0 for _ in range(self.n_agents)]
-
-        # initial vehicles' states
-        
-        self.agent_health = {_: self._init_health for _ in range(self.n_agents)}
-        self.opp_health = {_: self._init_health for _ in range(self._n_opponents)}
-        self._agent_cool = {_: True for _ in range(self.n_agents)}
-        self._opp_cool = {_: True for _ in range(self._n_opponents)}
-        self._agent_dones = [False for _ in range(self.n_agents)]
-
-        self.__init_full_obs()
-        return self.get_agent_obs()
 
     def Mahhv_reset(self):
         # UAV initial state, including
@@ -273,12 +185,6 @@ class vorenv(gym.Env):
         # initial count
         self._step_count = 0
         self._total_episode_reward = [0 for _ in range(self.n_agents)]
-
-        self.agent_health = {_: self._init_health for _ in range(self.n_agents)}
-        self.opp_health = {_: self._init_health for _ in range(self._n_opponents)}
-        self._agent_cool = {_: True for _ in range(self.n_agents)}
-        self._opp_cool = {_: True for _ in range(self._n_opponents)}
-        self._agent_dones = [False for _ in range(self.n_agents)]
 
         # initial environment
         # init vehicles in each time step, set the vehicles run in a 500m road, the speed of each vehicle is set as 10m/s
@@ -304,15 +210,13 @@ class vorenv(gym.Env):
         # init RU in each time step, RU can observe itself's location, the vehicles info in it range, number of tasks assigned to RSU associated to it, RSU service fairness
         self.n_r_agents = 4
         self.r_location = [[100, 0, 50], [200, 0, 50], [300, 0, 50], [400, 0, 50]]
-
-        self.r_v = np.concatenate(([np.array(list(self.v_info.values()))[0:6, 3:6].reshape(-1)],
-                                   [np.array(list(self.v_info.values()))[0:6, 3:6].reshape(-1)],
-                                   [np.array(list(self.v_info.values()))[4:10, 3:6].reshape(-1)],
-                                   [np.array(list(self.v_info.values()))[4:10, 3:6].reshape(-1)]))
-        self.r_assign = [[0, 0], [0, 0], [0, 0], [0, 0]]
-        self.r_fairness = [[0], [0], [0], [0]]
-        self.r_info = {_: np.concatenate((self.m_location[_], self.r_v[_], self.r_assign[_], self.r_fairness[_])) for _
-                       in range(self.n_r_agents)}
+        self.r_v = np.concatenate(([np.array(list(self.v_info.values()))[0:3, 0:6].reshape(-1)],
+                                   [np.array(list(self.v_info.values()))[2:5, 0:6].reshape(-1)],
+                                   [np.array(list(self.v_info.values()))[5:8, 0:6].reshape(-1)],
+                                   [np.array(list(self.v_info.values()))[7:10, 0:6].reshape(-1)]))
+        self.r_received = np.array([[0, 0], [0, 0], [0, 0], [0, 0]])
+        self.r_assign = np.array([[0, 0], [0, 0], [0, 0], [0, 0]])
+        self.r_info = {_: np.concatenate((self.r_location[_], self.r_v[_], self.r_received[_], self.r_assign[_])) for _ in range(self.n_r_agents)}
 #        print('self.r_info', self.r_info)
 
         # init MeNB in each time step, RSU can observe itself's location, RSU’s CPU frequency
@@ -325,50 +229,6 @@ class vorenv(gym.Env):
         # initial agents' observation
         self.__init_full_obs()
         return self.Mahhv_get_agent_obs()
-
-
-    def __update_agent_pos(self, agent_i, move):
-        curr_pos = copy.copy(self.agent_pos[agent_i])
-        next_pos = None
-        if move == 0:  # down
-            next_pos = [curr_pos[0] + 1, curr_pos[1]]
-        elif move == 1:  # left
-            next_pos = [curr_pos[0], curr_pos[1] - 1]
-        elif move == 2:  # up
-            next_pos = [curr_pos[0] - 1, curr_pos[1]]
-        elif move == 3:  # right
-            next_pos = [curr_pos[0], curr_pos[1] + 1]
-        elif move == 4:  # no-op
-            pass
-        else:
-            raise Exception('Action Not found!')
-
-        if next_pos is not None and self._is_cell_vacant(next_pos):
-            self.agent_pos[agent_i] = next_pos
-            self._full_obs[curr_pos[0]][curr_pos[1]] = PRE_IDS['empty']
-            self.__update_agent_view(agent_i)
-
-    def __update_opp_pos(self, opp_i, move):
-
-        curr_pos = copy.copy(self.opp_pos[opp_i])
-        next_pos = None
-        if move == 0:  # down
-            next_pos = [curr_pos[0] + 1, curr_pos[1]]
-        elif move == 1:  # left
-            next_pos = [curr_pos[0], curr_pos[1] - 1]
-        elif move == 2:  # up
-            next_pos = [curr_pos[0] - 1, curr_pos[1]]
-        elif move == 3:  # right
-            next_pos = [curr_pos[0], curr_pos[1] + 1]
-        elif move == 4:  # no-op
-            pass
-        else:
-            raise Exception('Action Not found!')
-
-        if next_pos is not None and self._is_cell_vacant(next_pos):
-            self.opp_pos[opp_i] = next_pos
-            self._full_obs[curr_pos[0]][curr_pos[1]] = PRE_IDS['empty']
-            self.__update_opp_view(opp_i)
 
     def is_valid(self, pos):
         return (0 <= pos[0] < self._grid_shape[0]) and (0 <= pos[1] < self._grid_shape[1])
@@ -387,81 +247,6 @@ class vorenv(gym.Env):
         """
         return (source_pos[0] - 2) <= target_pos[0] <= (source_pos[0] + 2) \
                and (source_pos[1] - 2) <= target_pos[1] <= (source_pos[1] + 2)
-
-    @staticmethod
-    def is_fireable(source_pos, target_pos):
-        """
-        Checks if the target_pos is in the firing range(3x3)
-
-        :param source_pos: Coordinates of the source
-        :param target_pos: Coordinates of the target
-        :return:
-        """
-        return (source_pos[0] - 1) <= target_pos[0] <= (source_pos[0] + 1) \
-               and (source_pos[1] - 1) <= target_pos[1] <= (source_pos[1] + 1)
-
-    def reduce_distance_move(self, source_pos, target_pos):
-
-        # Todo: makes moves Enum
-        _moves = []
-        if source_pos[0] > target_pos[0]:
-            _moves.append('UP')
-        elif source_pos[0] < target_pos[0]:
-            _moves.append('DOWN')
-
-        if source_pos[1] > target_pos[1]:
-            _moves.append('LEFT')
-        elif source_pos[1] < target_pos[1]:
-            _moves.append('RIGHT')
-
-        move = random.choice(_moves)
-        for k, v in ACTION_MEANING.items():
-            if move.lower() == v.lower():
-                move = k
-                break
-        return move
-
-    @property
-    def opps_action(self):
-        """
-        Opponent bots follow a hardcoded policy.
-
-        The bot policy is to attack the nearest enemy agent if it is within its firing range. If not,
-        it approaches the nearest visible enemy agent within visual range. An agent is visible to all bots if it
-        is inside the visual range of any individual bot. This shared vision gives an advantage to the bot team.
-
-        :return:
-        """
-
-        visible_agents = set([])
-        opp_agent_distance = {_: [] for _ in range(self._n_opponents)}
-
-        for opp_i, opp_pos in self.opp_pos.items():
-            for agent_i, agent_pos in self.agent_pos.items():
-                if agent_i not in visible_agents and self.agent_health[agent_i] > 0 \
-                        and self.is_visible(opp_pos, agent_pos):
-                    visible_agents.add(agent_i)
-                distance = abs(agent_pos[0] - opp_pos[0]) + abs(agent_pos[1] - opp_pos[1])  # manhattan distance
-                opp_agent_distance[opp_i].append([distance, agent_i])
-
-        opp_action_n = []
-        for opp_i in range(self._n_opponents):
-            action = None
-            for _, agent_i in sorted(opp_agent_distance[opp_i]):
-                if agent_i in visible_agents:
-                    if self.is_fireable(self.opp_pos[opp_i], self.agent_pos[agent_i]):
-                        action = agent_i + 5
-                    else:
-                        action = self.reduce_distance_move(self.opp_pos[opp_i], self.agent_pos[agent_i])
-                    break
-            if action is None:
-                logger.info('No visible agent for enemy:{}'.format(opp_i))
-                action = random.choice(range(5))
-            opp_action_n.append(action)
-
-
-        return opp_action_n
-
 
     def Mahhv_step(self, agents_action):
         rewards = [self._step_cost for _ in range(self.n_agents)]
@@ -596,6 +381,69 @@ class vorenv(gym.Env):
         # array to save the ddl for each ru
         r_ddl = [0, 0, 0, 0]
         self.r_m_new = self.o_v_new
+        for r_agent_num, r_action in enumerate(ru_action):
+            if r_agent_num < 2:
+                r_o = 0
+            else:
+                r_o = 1
+            band_r2m = 2
+            # get the observation for RU
+            r_pre_state = self.Mahhv_get_agent_obs()[2 + r_agent_num]
+            for v_tmp in range(0, 6):
+                r_pre_state[3 + v_tmp * 3 + 2] = self.r_m_new[r_o][v_tmp * 6 + 5]
+            # Modify the state to keep the v task not received by RU as 0 (D, C, L)
+            for v in range (0, 6):
+                r_pre_state[3 + v * 3 : 3 + v * 3 + 3] = np.multiply(r_pre_state[3 + v * 3 : 3 + v * 3 + 3], r_receive[r_agent_num][v])
+            real_state.append(r_pre_state)
+            num_r_rtr[r_agent_num] = r_pre_state[21:23]
+            # communication channel setting
+            for v in range (0, 6):
+                # handle the task received by OU 1 assigned to RU 0 or RU 1
+                if r_receive[r_agent_num][v] == 1:
+                    # Target MeNB m, distance between RU r and MeNB m
+                    m_index = int(r_agent_num * 2 + r_action[v])
+                    dis_r2m = np.sqrt(
+                        (self.r_location[r_agent_num][0] - self.m_location[m_index][0]) ** 2 +
+                        (self.r_location[r_agent_num][1] - self.m_location[m_index][1]) ** 2 +
+                        (self.r_location[r_agent_num][2] - self.m_location[m_index][2]) ** 2)
+                    # height of OU
+                    height_o = 50
+                    # the angle used to calculate the los probability (r2m)
+                    ars = dis_r2m / height_o
+                    # LoS probability
+                    plos = 1 / (1 + 9.6 * math.exp(-0.16 * (90 * np.arcsin(ars) / (math.pi / 2) - 9.6)))
+                    # sum of task allocated by RU r_agent_num which is equal to the task OU assigns to RU r_agent_num
+                    num_m = sum(r_receive[r_agent_num][0:6])
+                    # average bandwidth
+                    band_even_m = band_r2m / num_m
+                    # path loss
+                    PL = (20 * math.log10(83.78 * dis_r2m + 0.00001)) + 1 * plos + 20 * (1 - plos)  # 计算path loss
+                    # signal noise rate
+                    SNR = (0.2 * 1000 * 10 ** (- PL / 10)) / ((10 ** -17.4) * (band_even_m * 10 ** 6))
+                    rate_r2m = band_even_m * math.log2(1 + SNR)
+                    # record the re-tra times
+                    if r_action[v] == 0:
+                        num_r_rtr[r_agent_num][0] = num_r_rtr[r_agent_num][0] + 1
+                    if r_action[v] == 1:
+                        num_r_rtr[r_agent_num][1] = num_r_rtr[r_agent_num][1] + 1
+                    # calculate the retransmit delay
+                    delay_r2m = (r_pre_state[3 + v * 3] * 8)/ rate_r2m
+                    # calculate the compute delay GHz/GHz
+                    delay_m_compute = r_pre_state[3 + v * 3 + 1] / self.m_cpu[int(r_agent_num * 2 + r_action[v])]
+                    rm_total_delay = delay_r2m + delay_m_compute
+                    # Generate the final ddl information
+                    # np.array(list(self.r_m_new()))[v, 5] = np.array(list(self.o_v_new.values()))[v, 5] - rm_total_delay
+                    r_ddl[r_agent_num] = r_ddl[r_agent_num] + r_pre_state[3 + v * 3 + 2] - rm_total_delay
+                    print('r_agent_num', r_agent_num, r_ddl[r_agent_num], r_ddl)
+
+            # The fairness in the RU observation state has to be changed
+            self.r_assign[r_agent_num] = num_r_rtr[r_agent_num]
+
+
+
+        """
+        new action performed by RUs in simplified method
+        """
         for r_agent_num, r_action in enumerate(ru_action):
             if r_agent_num < 2:
                 r_o = 0
