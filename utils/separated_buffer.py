@@ -64,7 +64,7 @@ class SeparatedReplayBuffer(object):
         self.obs[self.step + 1] = obs.copy()
         self.rnn_states[self.step + 1] = rnn_states.copy()
         self.rnn_states_critic[self.step + 1] = rnn_states_critic.copy()
-        self.actions[self.step] = actions.copy().reshape(1,8)
+        self.actions[self.step] = actions.copy().reshape(1,4)
         self.action_log_probs[self.step] = action_log_probs.copy()
         self.value_preds[self.step] = value_preds.copy()
         self.rewards[self.step] = rewards.copy()
