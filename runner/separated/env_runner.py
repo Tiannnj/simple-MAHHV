@@ -115,7 +115,6 @@ class EnvRunner(Runner):
         for o in obs:
             share_obs.append(list(chain(*o)))
         share_obs = np.array(share_obs)  # shape = [env_num, agent_num * obs_dim]
-
         for agent_id in range(self.num_agents):
             if not self.use_centralized_V:
                 share_obs = np.array(list(obs[:, agent_id]))

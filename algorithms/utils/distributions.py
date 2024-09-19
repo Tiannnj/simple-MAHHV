@@ -63,10 +63,10 @@ class Categorical(nn.Module):
     def forward(self, x, available_actions=None):
         # x是1 * 24维
         x = self.linear(x)
-        if x.shape == torch.Size([2000, 16]):
-            x = x.reshape(2000, 8, 2)
+        if x.shape == torch.Size([2000, 8]):
+            x = x.reshape(2000, 4, 2)
         else:
-            x = x.reshape(1, 8, 2)
+            x = x.reshape(1, 4, 2)
         if available_actions is not None:
             x[available_actions == 0] = -1e10
         return FixedCategorical(logits=x)

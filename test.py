@@ -1,5 +1,7 @@
 import random
 import math
+
+import numpy
 import numpy as np
 import gym
 
@@ -102,7 +104,10 @@ for w in agents_action:
       print(w)
 
 
-eval_dones =  tuple[[True]]
-eval_masks = np.ones((2, 2, 1), dtype=np.float32)
-eval_masks[eval_dones == True] = np.zeros(((eval_dones == True).sum(), 1), dtype=np.float32)
-print(eval_masks)
+
+
+print(1//2)
+
+a = [5, 2, 3]
+b = numpy.prod(a)
+print(b)
