@@ -25,6 +25,7 @@ class EnvRunner(Runner):
 
         for episode in range(episodes):
             print('********episode********', episode)
+            self.warmup()
             if self.use_linear_lr_decay:
                 for agent_id in range(self.num_agents):
                     self.trainer[agent_id].policy.lr_decay(episode, episodes)
@@ -40,9 +41,7 @@ class EnvRunner(Runner):
                     actions_env,
                 ) = self.collect(step)
 
-
-
-                # Obser reward and next obs
+                # Observe reward and next obs
                 # print('******step******', step)
                 obs, rewards, dones = self.envs.step(actions_env)
 
