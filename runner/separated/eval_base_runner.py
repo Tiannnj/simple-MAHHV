@@ -85,9 +85,6 @@ class Runner(object):
             )
             self.policy.append(po)
 
-        if self.model_dir is not None:
-            self.restore()
-
         self.trainer = []
         self.buffer = []
         for agent_id in range(self.num_agents):
@@ -160,6 +157,8 @@ class Runner(object):
             )
 
     def restore(self):
+        print('load models')
+        self.model_dir = "../results/MyEnv/MyEnv/mappo/check/run7/models"
         for agent_id in range(self.num_agents):
             policy_actor_state_dict = torch.load(str(self.model_dir) + "/actor_agent" + str(agent_id) + ".pt")
             self.policy[agent_id].actor.load_state_dict(policy_actor_state_dict)
@@ -167,6 +166,7 @@ class Runner(object):
                 str(self.model_dir) + "/critic_agent" + str(agent_id) + ".pt"
             )
             self.policy[agent_id].critic.load_state_dict(policy_critic_state_dict)
+        print('load model successfully!')
 
     def log_train(self, train_infos, total_num_steps):
         for agent_id in range(self.num_agents):

@@ -125,3 +125,6 @@ with open('my_list.csv', 'w', newline='') as file:
     writer = csv.writer(file)
     for i in range(0, 2):
         writer.writerow(x[i * 9: (i + 1) * 9])
+
+result_record_name = 'result_record' + str(23) + '.csv'
+print(result_record_name)

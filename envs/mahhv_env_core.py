@@ -24,7 +24,7 @@ class MahhvEnvCore(object):
         s = self.env.Mahhv_reset()
         """
         # self.agent_num设定为2个智能体时，返回值为一个list，每个list里面为一个shape = (self.obs_dim, )的观测数据
-        # When self.agent_num is set to 2 agents, the return value is a list, each list contains a shape = (self.obs_dim, ) observation data
+        # When self.agent_num is set to 2 agents, the return value is a list, each list contains a shape = (self.obs_dim) observation data
         """
         sub_agent_obs = []
         for i in range(self.agent_num):

@@ -73,6 +73,10 @@ class vorenv(gym.Env):
         self._obs_high = np.repeat([10000], 25)
         self.observation_space = MultiAgentObservationSpace([spaces.Box(self._obs_low, self._obs_high) for _ in range(self.n_agents)])
 
+        self.D_array = np.random.uniform(0.1, 0.6, 100)
+        self.C_array = np.random.uniform(0.1, 0.6, 100)
+        self.L_array = np.random.uniform(20, 100, 100)
+
         self._agent_dones = [None for _ in range(self.n_agents)]
 
 
@@ -201,6 +205,7 @@ class vorenv(gym.Env):
         self.v_info = {
             _: [_ * 50 + 10, 0, 0, random.uniform(0.1, 0.6), random.uniform(0.1, 0.6), random.uniform(20, 100)] for _ in
             range(self.n_v)}
+
 #        print('self.v_info', self.v_info)
 
         # init OU in each time step, OU can observe itself's location, the vehicles info in it range, the task number it has received, number of tasks assigned to RU, OU service fairness
@@ -296,6 +301,7 @@ class vorenv(gym.Env):
             o_pre_state = self.Mahhv_get_OU_obs()[o_agent_num]
             num_o_receive = self.Mahhv_get_OU_obs()[o_agent_num][-4:-2]
             num_o_tra = o_pre_state[-2:]
+
             # communication channel setting
             for v in range(0, 5):
                 # distance between vehicle v and OU o
@@ -388,6 +394,8 @@ class vorenv(gym.Env):
             for r in range(0, 2):
                 self.o_tra[o_agent_num][r] = num_o_tra[r]
 
+            print(o_agent_num, num_o_tra)
+
         # take actions for RU agents  ru_action = [0,1]
         # array to save the ddl for each ru
         r_ddl = [0, 0, 0, 0]
@@ -406,6 +414,7 @@ class vorenv(gym.Env):
             associated_ou = r_agent_num
             " tasks amount assigned to RU and its nearby RU until TS t"
             for x in range(0, 2):
+                print(self.o_tra[r_agent_num//2][x])
                 new_num_r_receive[x] = pre_num_r_receive[x] + self.o_tra[r_agent_num//2][x]
             " modify the task ddl on the RU"
             for v_tmp in range(0, 3):
@@ -466,9 +475,12 @@ class vorenv(gym.Env):
             self.r_received[r_agent_num] = new_num_r_receive
             num_r_rec[r_agent_num] = new_num_r_receive
 
+
             # The fairness in the RU observation state for re_tra has to be updated
             self.r_assign[r_agent_num] = num_r_rtr[r_agent_num]
             # calculate the reward for each OU
+
+        print('num_r_rec', num_r_rec)
         x = 0
         y = 0
         for agent_o in range(0, self.n_o_agents):
@@ -499,13 +511,14 @@ class vorenv(gym.Env):
 
         # Adjust new environmental information
         self.Mahhv_reset()
+
         for o in range(0, self.n_o_agents):
             self.o_receive[o] = num_o_receive[o]
         for o in range(0, self.n_o_agents):
             self.o_tra[o_agent_num][o] = num_o_tra[o]
         for r in range(0, self.n_r_agents):
-            self.r_assign[r] = num_r_rtr[r]
             self.r_received[r] = num_r_rec[r]
+            self.r_assign[r] = num_r_rtr[r]
         return self.Mahhv_get_agent_obs(), rewards, self._agent_dones
 
     def seed(self, n):
