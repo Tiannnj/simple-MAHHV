@@ -6,6 +6,7 @@ import torch
 import imageio
 from utils.util import update_linear_schedule
 from runner.separated.base_runner import Runner
+import csv
 
 
 def _t2n(x):
@@ -20,7 +21,7 @@ class EnvRunner(Runner):
         self.warmup()
         start = time.time()
         self.num_env_steps = 1000000
-        self.episode_length = 100
+        self.episode_length = 10
         episodes = int(self.num_env_steps) // self.episode_length // self.n_rollout_threads
 
         for episode in range(episodes):
@@ -44,6 +45,7 @@ class EnvRunner(Runner):
                 # Observe reward and next obs
                 # print('******step******', step)
                 obs, rewards, dones = self.envs.step(actions_env)
+
 
                 data = (
                     obs,
@@ -102,6 +104,7 @@ class EnvRunner(Runner):
                 self.log_train(train_infos, total_num_steps)
 
             # eval
+            self.eval_interva = 1
             if episode % self.eval_interval == 0 and self.use_eval:
                 print('********eval*********')
                 self.eval(total_num_steps)
@@ -250,6 +253,7 @@ class EnvRunner(Runner):
             dtype=np.float32,
         )
         eval_masks = np.ones((self.n_eval_rollout_threads, self.num_agents, 1), dtype=np.float32)
+        record_all_steps = []
         # print("net",[trainer.policy.actor for trainer in self.trainer])
         # print("net", [trainer.policy.critic for trainer in self.trainer])
         for eval_step in range(self.episode_length):
@@ -293,6 +297,10 @@ class EnvRunner(Runner):
 
             # Obser reward and next obs
             eval_obs, eval_rewards, eval_dones = self.eval_envs.step(eval_actions_env)
+            record_each_step = list(eval_actions_env) + list(eval_obs) + list(eval_rewards)
+            print(record_each_step)
+            record_all_steps = record_all_steps + record_each_step
+            # save
             eval_episode_rewards.append(eval_rewards)
 
             eval_rnn_states[eval_dones == True] = np.zeros(
@@ -303,6 +311,10 @@ class EnvRunner(Runner):
             eval_masks[eval_dones == True] = np.zeros(((eval_dones == True).sum(), 1), dtype=np.float32)
 
         eval_episode_rewards = np.array(eval_episode_rewards)
+        with open('result_record.csv', 'w', newline='') as file:
+            writer = csv.writer(file)
+            for i in range(0, self.episode_length):
+                writer.writerow(record_all_steps[i * 3: (i + 1) * 3])
 
         eval_train_infos = []
         for agent_id in range(self.num_agents):
@@ -387,6 +399,7 @@ class EnvRunner(Runner):
 
                 if self.all_args.save_gifs:
                     image = self.envs.render("rgb_array")[0][0]
+                    all_frames.append(image)
                     all_frames.append(image)
                     calc_end = time.time()
                     elapsed = calc_end - calc_start

@@ -138,6 +138,7 @@ class Runner(object):
         """
         #
         print('train')
+        print('train')
         train_infos = []
         for agent_id in range(self.num_agents):
             self.trainer[agent_id].prep_training()

@@ -4,6 +4,7 @@ import math
 import numpy
 import numpy as np
 import gym
+import csv
 
 from itertools import chain
 
@@ -104,10 +105,23 @@ for w in agents_action:
       print(w)
 
 
-
-
 print(1//2)
 
 a = [5, 2, 3]
 b = numpy.prod(a)
 print(b)
+
+a = list([1 ,2, 3])
+b = list([[2, 4], [2, 4], [2, 5]])
+c = list([0, 0, 0])
+d = list([1, 0, 0])
+x = a + b + c
+y = a + b + d
+x = x + y
+print(x)
+for i in range(0, 2):
+    print(x[i*9: (i+1)*9])
+with open('my_list.csv', 'w', newline='') as file:
+    writer = csv.writer(file)
+    for i in range(0, 2):
+        writer.writerow(x[i * 9: (i + 1) * 9])

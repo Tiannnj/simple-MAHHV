@@ -402,7 +402,6 @@ class vorenv(gym.Env):
             # get the observation for RU
             r_pre_state = self.Mahhv_get_agent_obs()[r_agent_num]
             pre_num_r_receive = r_pre_state[21:23]
-            print('self.o_tra', self.o_tra)
             new_num_r_receive = pre_num_r_receive.copy()
             associated_ou = r_agent_num
             " tasks amount assigned to RU and its nearby RU until TS t"
@@ -465,7 +464,6 @@ class vorenv(gym.Env):
 
             # The fairness in the RU observation state for receiving has to be updated
             self.r_received[r_agent_num] = new_num_r_receive
-            print(r_agent_num, new_num_r_receive)
             num_r_rec[r_agent_num] = new_num_r_receive
 
             # The fairness in the RU observation state for re_tra has to be updated
