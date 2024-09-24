@@ -407,28 +407,28 @@ class vorenv(gym.Env):
             band_r2m = 2
             # get the observation for RU
             r_pre_state = self.Mahhv_get_agent_obs()[r_agent_num]
-            pre_num_r_receive = r_pre_state[21:23]
+            pre_num_r_receive = r_pre_state[21:23].copy()
             new_num_r_receive = pre_num_r_receive.copy()
-            associated_ou = r_agent_num
             " tasks amount assigned to RU and its nearby RU until TS t"
             for x in range(0, 2):
-                new_num_r_receive[x] = pre_num_r_receive[x] + self.o_tra[r_agent_num//2][x]
+                new_num_r_receive[x] = self.o_tra[r_agent_num//2][x]
             " modify the task ddl on the RU"
             for v_tmp in range(0, 3):
                 r_pre_state[3 + v_tmp * 6 + 5] = self.r_m_new[r_o][v_tmp * 6 + 5]
             # Modify the state to keep the v task not received by RU as 0 (D, C, L)
             r_receive_new = []
             for r_tmp_num in range(0, 4):
-                if r_tmp_num == (0 or 2):
+                if r_tmp_num == 0 or r_tmp_num == 2:
                     r_receive_new.append(r_receive[r_tmp_num][0:3])
                 else:
                     r_receive_new.append(r_receive[r_tmp_num][2:5])
+                print('r_receive_new', r_receive_new)
             "real task situations that arrived at RUs"
             for v in range(0, 3):
-                r_pre_state[3 + v * 6: 3 + v * 6 + 5] = np.multiply(r_pre_state[3 + v * 6: 3 + v * 6 + 5],
-                                                                    r_receive_new[r_agent_num][v])
+                r_pre_state[3 + v * 6: 3 + v * 6 + 5] = np.multiply(r_pre_state[3 + v * 6: 3 + v * 6 + 5], r_receive_new[r_agent_num][v])
             " tasks amount assigned to each MeNB "
             num_r_rtr[r_agent_num] = r_pre_state[23:25]
+
             # communication channel setting
             for v in range(0, 3):
                 # handle the task received by OU 1 assigned to RU 0 or RU 1
@@ -459,6 +459,7 @@ class vorenv(gym.Env):
                         num_r_rtr[r_agent_num][0] = num_r_rtr[r_agent_num][0] + 1
                     if r_action[1 + v] == 1:
                         num_r_rtr[r_agent_num][1] = num_r_rtr[r_agent_num][1] + 1
+                    print('num_r_rtr',r_agent_num, num_r_rtr)
                     # calculate the retransmit delay
                     delay_r2m = (r_pre_state[3 + v * 3 + 3] * 8) / rate_r2m
                     # calculate the compute delay GHz/GHz
@@ -471,7 +472,6 @@ class vorenv(gym.Env):
             # The fairness in the RU observation state for receiving has to be updated
             self.r_received[r_agent_num] = new_num_r_receive
             num_r_rec[r_agent_num] = new_num_r_receive
-
 
             # The fairness in the RU observation state for re_tra has to be updated
             self.r_assign[r_agent_num] = num_r_rtr[r_agent_num]
