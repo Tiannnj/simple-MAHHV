@@ -7,6 +7,7 @@ import imageio
 from utils.util import update_linear_schedule
 from runner.separated.base_runner import Runner
 import csv
+from pathlib import Path
 import random
 
 
@@ -301,7 +302,7 @@ class EnvRunner(Runner):
 
             # Observe reward and next obs
             eval_obs, eval_rewards, eval_dones = self.eval_envs.step(eval_actions_env)
-            record_each_step = list(eval_actions_env) + list(eval_obs) + list(eval_rewards)
+            record_each_step = list(eval_actions_env) + list(eval_obs) + list(eval_rewards) + list(eval_rewards[0][0])
             record_all_steps = record_all_steps + record_each_step
             # save
             eval_episode_rewards.append(eval_rewards)
@@ -314,11 +315,15 @@ class EnvRunner(Runner):
             eval_masks[eval_dones == True] = np.zeros(((eval_dones == True).sum(), 1), dtype=np.float32)
 
         eval_episode_rewards = np.array(eval_episode_rewards)
-        result_record_name = 'result_record' + str(episode) + '.csv'
+        result_record_name = '../eval_result/'
+        result_record = (Path(result_record_name))
+        if not result_record.exists():
+            os.makedirs(str(result_record))
+        result_record_name = '../eval_result/result_record' + str(episode) + '.csv'
         with open(result_record_name, 'w', newline='') as file:
             writer = csv.writer(file)
             for i in range(0, self.episode_length):
-                writer.writerow(record_all_steps[i * 3: (i + 1) * 3])
+                writer.writerow(record_all_steps[i * 4: (i + 1) * 4])
 
         eval_train_infos = []
         for agent_id in range(self.num_agents):
