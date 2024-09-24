@@ -22,6 +22,15 @@ MAPPO原版代码对于环境的封装过于复杂，本项目直接将环境封
 
 直接将代码下载下来，创建一个Conda环境，然后运行代码，缺啥补啥包。具体什么包以后再添加。
 
+## 文件
+
+- train目录
+  
+  mahhv_train.py实现对模型的训练
+  
+  load_run.py实现对最终model的使用与结果分析
+
+
 ## 用法
 
 - 环境部分是一个空的的实现，文件`light_mappo/envs/env_core.py`里面环境部分的实现：[Code](https://github.com/tinyzqh/light_mappo/blob/main/envs/env_core.py)
@@ -74,11 +83,4 @@ class EnvCore(object):
 
 - [on-policy](https://github.com/marlbenchmark/on-policy) - 💌 Learn the author implementation of MAPPO.
 
-## Maintainers
-
-[@tinyzqh](https://github.com/tinyzqh).
-
-## License
-
-[MIT](LICENSE) © tinyzqh
 
