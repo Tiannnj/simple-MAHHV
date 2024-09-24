@@ -116,7 +116,7 @@ class vorenv(gym.Env):
             _agent_o_obs = np.zeros(37)
             _agent_o_obs[0: 3] = self.o_location[agent_o]  # OU location
             _agent_o_obs[3: 33] = self.o_v[agent_o]  # tasks' information
-            _agent_o_obs[33: 35] = self.o_receive[:].flatten() # number of tasks received by both OU
+            _agent_o_obs[33: 35] = self.o_receive[:].flatten()  # number of tasks received by both OU
             _agent_o_obs[35: 37] = self.o_tra[agent_o]  # number of tasks assigned to RU by each OU
             _agent_o_obs = _agent_o_obs.flatten().tolist()
             total_obs.append(_agent_o_obs)
@@ -293,6 +293,7 @@ class vorenv(gym.Env):
                 agents_action[group * 2][0] = 0
                 ou_action[group][7] = [1]
         num_r_rtr = np.array([[0, 0], [0, 0], [0, 0], [0, 0]])
+        num_o_tra_total = np.array([[0, 0], [0, 0]])
         # take actions for OU agents
         for o_agent_num, o_action in enumerate(ou_action):
             band_o2v = 5
@@ -301,7 +302,6 @@ class vorenv(gym.Env):
             o_pre_state = self.Mahhv_get_OU_obs()[o_agent_num]
             num_o_receive = self.Mahhv_get_OU_obs()[o_agent_num][-4:-2]
             num_o_tra = o_pre_state[-2:]
-
             # communication channel setting
             for v in range(0, 5):
                 # distance between vehicle v and OU o
@@ -394,8 +394,6 @@ class vorenv(gym.Env):
             for r in range(0, 2):
                 self.o_tra[o_agent_num][r] = num_o_tra[r]
 
-            print(o_agent_num, num_o_tra)
-
         # take actions for RU agents  ru_action = [0,1]
         # array to save the ddl for each ru
         r_ddl = [0, 0, 0, 0]
@@ -414,7 +412,6 @@ class vorenv(gym.Env):
             associated_ou = r_agent_num
             " tasks amount assigned to RU and its nearby RU until TS t"
             for x in range(0, 2):
-                print(self.o_tra[r_agent_num//2][x])
                 new_num_r_receive[x] = pre_num_r_receive[x] + self.o_tra[r_agent_num//2][x]
             " modify the task ddl on the RU"
             for v_tmp in range(0, 3):
@@ -480,7 +477,6 @@ class vorenv(gym.Env):
             self.r_assign[r_agent_num] = num_r_rtr[r_agent_num]
             # calculate the reward for each OU
 
-        print('num_r_rec', num_r_rec)
         x = 0
         y = 0
         for agent_o in range(0, self.n_o_agents):
@@ -509,13 +505,15 @@ class vorenv(gym.Env):
         # Generate the total reward
         rewards = rewards_ru_average
 
+        # Save now o_tra information
+        num_o_tra_total = self.o_tra
         # Adjust new environmental information
         self.Mahhv_reset()
 
         for o in range(0, self.n_o_agents):
             self.o_receive[o] = num_o_receive[o]
         for o in range(0, self.n_o_agents):
-            self.o_tra[o_agent_num][o] = num_o_tra[o]
+            self.o_tra[o] = num_o_tra_total[o]
         for r in range(0, self.n_r_agents):
             self.r_received[r] = num_r_rec[r]
             self.r_assign[r] = num_r_rtr[r]
