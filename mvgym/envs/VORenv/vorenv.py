@@ -75,7 +75,7 @@ class vorenv(gym.Env):
 
         self.D_array = np.random.uniform(0.1, 0.6, 100)
         self.C_array = np.random.uniform(0.1, 0.6, 100)
-        self.L_array = np.random.uniform(20, 100, 100)
+        self.L_array = np.random.uniform(20, 200, 100)
 
         self._agent_dones = [None for _ in range(self.n_agents)]
 
@@ -275,8 +275,8 @@ class vorenv(gym.Env):
         for o_num in range(0, self.n_o_agents):
             for v_num in range(0, 5):
                 ou_remain_ddl[o_num][v_num] = self.o_v[o_num][6 * v_num + 5]
-        #        print('ou_remain_ddl', ou_remain_ddl)
-        ou_delay = [[0] * 6, [0] * 6]
+
+        ou_delay = [[0] * 5, [0] * 5]
         self.o_v_new = self.o_v
         self.r_m_new = self.o_v
         rewards_ou = [0 for _ in range(self.n_o_agents)]
@@ -296,8 +296,8 @@ class vorenv(gym.Env):
         num_o_tra_total = np.array([[0, 0], [0, 0]])
         # take actions for OU agents
         for o_agent_num, o_action in enumerate(ou_action):
-            band_o2v = 5
-            band_o2r = 1
+            band_o2v = 20
+            band_o2r = 10
             # get the observation for OU
             o_pre_state = self.Mahhv_get_OU_obs()[o_agent_num]
             num_o_receive = self.Mahhv_get_OU_obs()[o_agent_num][-4:-2]
@@ -327,7 +327,7 @@ class vorenv(gym.Env):
                 SNR = (0.2 * 1000 * 10 ** (- PL / 10)) / ((10 ** -17.4) * (band_even_v * 10 ** 6 + 0.000001))
                 rate_v2o = band_even_v * math.log2(1 + SNR)
                 # delay from v2o
-                delay_v2o = (self.o_v[o_agent_num][3 + v * 6]) / rate_v2o
+                delay_v2o =((self.o_v[o_agent_num][3 + v * 6]) / rate_v2o) * 1000
                 # transmit task to RUs
                 for r in range(0, 2):
                     # record o_r_v condition for each RU
@@ -363,7 +363,7 @@ class vorenv(gym.Env):
                     #                    print('rate_o2r', rate_o2r)
                     # delay from o to r
                     if rate_o2r > 0:
-                        delay_o2r = (self.o_v[o_agent_num][3 + v * 6] * 8) / rate_o2r
+                        delay_o2r = ((self.o_v[o_agent_num][3 + v * 6] * 8) / rate_o2r) * 1000
                     else:
                         delay_o2r = 0
                     # the total delay in the stage 1
@@ -404,7 +404,7 @@ class vorenv(gym.Env):
                 r_o = 0
             else:
                 r_o = 1
-            band_r2m = 2
+            band_r2m = 40
             # get the observation for RU
             r_pre_state = self.Mahhv_get_agent_obs()[r_agent_num]
             pre_num_r_receive = r_pre_state[21:23].copy()
@@ -422,13 +422,11 @@ class vorenv(gym.Env):
                     r_receive_new.append(r_receive[r_tmp_num][0:3])
                 else:
                     r_receive_new.append(r_receive[r_tmp_num][2:5])
-                print('r_receive_new', r_receive_new)
             "real task situations that arrived at RUs"
             for v in range(0, 3):
-                r_pre_state[3 + v * 6: 3 + v * 6 + 5] = np.multiply(r_pre_state[3 + v * 6: 3 + v * 6 + 5], r_receive_new[r_agent_num][v])
+                r_pre_state[3 + v * 6: 3 + v * 6 + 6] = np.multiply(r_pre_state[3 + v * 6: 3 + v * 6 + 6], r_receive_new[r_agent_num][v])
             " tasks amount assigned to each MeNB "
             num_r_rtr[r_agent_num] = r_pre_state[23:25]
-
             # communication channel setting
             for v in range(0, 3):
                 # handle the task received by OU 1 assigned to RU 0 or RU 1
@@ -459,15 +457,16 @@ class vorenv(gym.Env):
                         num_r_rtr[r_agent_num][0] = num_r_rtr[r_agent_num][0] + 1
                     if r_action[1 + v] == 1:
                         num_r_rtr[r_agent_num][1] = num_r_rtr[r_agent_num][1] + 1
-                    print('num_r_rtr',r_agent_num, num_r_rtr)
                     # calculate the retransmit delay
-                    delay_r2m = (r_pre_state[3 + v * 3 + 3] * 8) / rate_r2m
+                    delay_r2m = ((r_pre_state[3 + v * 6 + 3] * 8) / rate_r2m) * 1000
                     # calculate the compute delay GHz/GHz
-                    delay_m_compute = r_pre_state[3 + v * 3 + 4] / self.m_cpu[int(r_agent_num * 2 + r_action[1 + v])]
+                    delay_m_compute =( r_pre_state[3 + v * 3 + 4] / self.m_cpu[int(r_agent_num * 2 + r_action[1 + v])]) * 1000
                     rm_total_delay = delay_r2m + delay_m_compute
                     # Generate the final ddl information
                     # np.array(list(self.r_m_new()))[v, 5] = np.array(list(self.o_v_new.values()))[v, 5] - rm_total_delay
-                    r_ddl[r_agent_num] = r_ddl[r_agent_num] + r_pre_state[3 + v * 3 + 5] - rm_total_delay
+                    r_ddl[r_agent_num] = r_ddl[r_agent_num] +  r_pre_state[3 + v * 3 + 5] - rm_total_delay
+
+
 
             # The fairness in the RU observation state for receiving has to be updated
             self.r_received[r_agent_num] = new_num_r_receive
@@ -492,6 +491,7 @@ class vorenv(gym.Env):
 
         # calculate the reward for each RU
         z = 0
+        print(r_ddl)
         f_r_rtr = [0 for _ in range(self.n_r_agents)]
         for agent_r in range(0, self.n_r_agents):
             for k in self.r_assign[agent_r]:

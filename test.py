@@ -128,3 +128,13 @@ with open('my_list.csv', 'w', newline='') as file:
 
 result_record_name = 'result_record' + str(23) + '.csv'
 print(result_record_name)
+
+
+" 传输速率test "
+band_even_r = 0.2 # MHz
+# signal noise rate
+PL = (20 * math.log10(83.78 * 50 + 0.00001)) + 1
+SNR = (1 * 1000 * 10 ** (- PL / 10)) / ((10 ** -17.4) * (band_even_r * 10 ** 6 + 0.000001))
+rate_o2r = band_even_r * math.log2(1 + SNR)  # Mb/s
+delay_o2r = (0.2 * 8) / rate_o2r
+print(delay_o2r)
