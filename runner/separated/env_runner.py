@@ -114,7 +114,7 @@ class EnvRunner(Runner):
         # reset env
         D_array = np.random.uniform(0.1, 0.6, 100)
         C_array = np.random.uniform(0.1, 0.6, 100)
-        L_array = np.random.uniform(20, 100, 100)
+        L_array = np.random.uniform(20, 200, 100)
         obs = self.envs.reset()  # shape = [env_num, agent_num, obs_dim]
         obs
         share_obs = []
@@ -315,15 +315,17 @@ class EnvRunner(Runner):
             eval_masks[eval_dones == True] = np.zeros(((eval_dones == True).sum(), 1), dtype=np.float32)
 
         eval_episode_rewards = np.array(eval_episode_rewards)
-        result_record_name = '../eval_result/'
-        result_record = (Path(result_record_name))
-        if not result_record.exists():
-            os.makedirs(str(result_record))
-        result_record_name = '../eval_result/result_record' + str(episode) + '.csv'
-        with open(result_record_name, 'w', newline='') as file:
-            writer = csv.writer(file)
-            for i in range(0, self.episode_length):
-                writer.writerow(record_all_steps[i * 4: (i + 1) * 4])
+        " save the eval results in each 50 episodes"
+        if episode % 50 == 0:
+            result_record_name = '../eval_result/'
+            result_record = (Path(result_record_name))
+            if not result_record.exists():
+                os.makedirs(str(result_record))
+            result_record_name = '../eval_result/result_record' + str(episode) + '.csv'
+            with open(result_record_name, 'w', newline='') as file:
+                writer = csv.writer(file)
+                for i in range(0, self.episode_length):
+                    writer.writerow(record_all_steps[i * 4: (i + 1) * 4])
 
         eval_train_infos = []
         for agent_id in range(self.num_agents):

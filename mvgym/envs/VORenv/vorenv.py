@@ -40,7 +40,7 @@ class vorenv(gym.Env):
 
         # init vehicles in each time step, set the vehicles run in a 500m road, the speed of each vehicle is set as 10m/s, conencted with D, C, L
         self.n_v = 10
-        self.v_info = {_: [ _ * 50 + 10, 0, 0, random.uniform(0.1,0.6), random.uniform(0.1,0.6), random.uniform(20,100)] for _ in range(self.n_v)}
+        self.v_info = {_: [ _ * 50 + 10, 0, 0, random.uniform(0.1,0.6), random.uniform(0.1,0.6), random.uniform(20,200)] for _ in range(self.n_v)}
 
         # init OU in each time step, OU can observe itself's location, the vehicles info in it range, the task number it has received, number of tasks assigned to RU, OU service fairness
         self.n_o_agents = 2
@@ -203,7 +203,7 @@ class vorenv(gym.Env):
         # init vehicles in each time step, set the vehicles run in a 500m road, the speed of each vehicle is set as 10m/s
         self.n_v = 10
         self.v_info = {
-            _: [_ * 50 + 10, 0, 0, random.uniform(0.1, 0.6), random.uniform(0.1, 0.6), random.uniform(20, 100)] for _ in
+            _: [_ * 50 + 10, 0, 0, random.uniform(0.1, 0.6), random.uniform(0.1, 0.6), random.uniform(20, 200)] for _ in
             range(self.n_v)}
 
 #        print('self.v_info', self.v_info)
