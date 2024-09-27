@@ -116,7 +116,6 @@ class EnvRunner(Runner):
         C_array = np.random.uniform(0.1, 0.6, 100)
         L_array = np.random.uniform(20, 200, 100)
         obs = self.envs.reset()  # shape = [env_num, agent_num, obs_dim]
-        obs
         share_obs = []
         for o in obs:
             share_obs.append(list(chain(*o)))
