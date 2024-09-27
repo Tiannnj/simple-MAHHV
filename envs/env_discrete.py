@@ -39,26 +39,9 @@ class DiscreteActionEnv(object):
         for agent_idx in range(self.num_agent):
             # physical action space
             u_action_space = spaces.Discrete(self.signal_action_dim)  # 5个离散的动作
-
             # if self.movable:
             total_action_space.append(u_action_space)
 
-            # total action space
-            # if len(total_action_space) > 1:
-            #     # all action spaces are discrete, so simplify to MultiDiscrete action space
-            #     if all(
-            #         [
-            #             isinstance(act_space, spaces.Discrete)
-            #             for act_space in total_action_space
-            #         ]
-            #     ):
-            #         act_space = MultiDiscrete(
-            #             [[0, act_space.n - 1] for act_space in total_action_space]
-            #         )
-            #     else:
-            #         act_space = spaces.Tuple(total_action_space)
-            # self.action_space.append(act_space)
-            # else:
             self.action_space.append(total_action_space[agent_idx])
 
             # observation space

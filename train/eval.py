@@ -170,13 +170,7 @@ def main(args):
 
     runner = Runner(config)
     runner.eval(20000)
-    # post process
-    # envs.close()
-    # if all_args.use_eval and eval_envs is not envs:
-    #     eval_envs.close()
 
-    # runner.writter.export_scalars_to_json(str(runner.log_dir + "/summary.json"))
-    # runner.writter.close()
 
 
 if __name__ == "__main__":
