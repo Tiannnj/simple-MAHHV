@@ -464,14 +464,12 @@ class vorenv(gym.Env):
                     # calculate the retransmit delay
                     delay_r2m = ((r_pre_state[3 + v * 6 + 3] * 8) / rate_r2m) * 1000
                     # calculate the compute delay GHz/GHz
-                    delay_m_compute =( r_pre_state[3 + v * 3 + 4] / self.m_cpu[int(r_agent_num * 2 + r_action[1 + v])]) * 1000
+                    delay_m_compute =( r_pre_state[3 + v * 6 + 4] / self.m_cpu[int(r_agent_num * 2 + r_action[1 + v])]) * 1000
                     rm_total_delay = delay_r2m + delay_m_compute
                     # Generate the final ddl information
                     # np.array(list(self.r_m_new()))[v, 5] = np.array(list(self.o_v_new.values()))[v, 5] - rm_total_delay
-                    revised_ddl = max(r_pre_state[3 + v * 3 + 5] - rm_total_delay, [0])
+                    revised_ddl = max(r_pre_state[3 + v * 6 + 5] - rm_total_delay, [0])
                     r_ddl[r_agent_num] = r_ddl[r_agent_num] +  np.array(revised_ddl)
-
-
 
             # The fairness in the RU observation state for receiving has to be updated
             self.r_received[r_agent_num] = new_num_r_receive
