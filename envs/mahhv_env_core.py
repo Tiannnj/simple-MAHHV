@@ -20,8 +20,8 @@ class MahhvEnvCore(object):
         self.ou_action_dim = self.env.ou_action_space[0].n
         self.ru_action_dim = self.env.ru_action_space[0].n
 
-    def reset(self):
-        s = self.env.Mahhv_reset()
+    def reset(self, x):
+        s = self.env.Mahhv_reset(x)
         """
         # self.agent_num设定为2个智能体时，返回值为一个list，每个list里面为一个shape = (self.obs_dim, )的观测数据
         # When self.agent_num is set to 2 agents, the return value is a list, each list contains a shape = (self.obs_dim) observation data
@@ -32,7 +32,7 @@ class MahhvEnvCore(object):
             sub_agent_obs.append(sub_obs)
         return sub_agent_obs
 
-    def step(self, actions):
+    def step(self, actions, x):
         """
         # self.agent_num设定为2个智能体时，actions的输入为一个2纬的list，每个list里面为一个shape = (self.action_dim, )的动作数据
         # 默认参数情况下，输入为一个list，里面含有两个元素，因为动作维度为5，所里每个元素shape = (5, )
@@ -46,7 +46,7 @@ class MahhvEnvCore(object):
         sub_agent_done = []
 #        print('actions', actions)  #  [[[0. 1. 0. 0. 0. 0. 0. 0. 0. 0. 0.] [0. 0. 0. 0. 0. 1. 0. 0. 0. 0. 0.]]
         # action_index = [int(np.where(act==1)[0][0]) for act in actions]
-        next_s, r, done = self.env.Mahhv_step(actions)
+        next_s, r, done = self.env.Mahhv_step(actions,  x)
 #        print('next_s, r', next_s, r)
         for i in range(self.agent_num):
             # r[agent_i] + 100 if info['win'] else r[agent_i] - 0.1

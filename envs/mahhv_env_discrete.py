@@ -64,7 +64,7 @@ class MahhvDiscreteActionEnv(object):
             for _ in range(self.num_agent)
         ]
 
-    def step(self, actions):
+    def step(self, actions, x):
         """
         输入actions维度假设：
         # actions shape = (5, 2, 5)
@@ -74,13 +74,13 @@ class MahhvDiscreteActionEnv(object):
         # 5 threads of the environment, with 2 intelligent agents inside, and each intelligent agent's action is a 5-dimensional one_hot encoding
         """
 
-        results = self.env.step(actions)
+        results = self.env.step(actions, x)
         obs, rews, dones = results
 
         return np.stack(obs), np.stack(rews), np.stack(dones)
 
-    def reset(self):
-        obs = self.env.reset()
+    def reset(self, x):
+        obs = self.env.reset(x)
 #        print('obbbbs', np.stack(obs))
         return np.stack(obs)
 
@@ -143,4 +143,4 @@ class MultiDiscrete:
 
 
 if __name__ == "__main__":
-    MahhvDiscreteActionEnv().step(actions=None)
+    MahhvDiscreteActionEnv().step(actions=None, x=None)

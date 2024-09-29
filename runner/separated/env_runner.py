@@ -20,7 +20,6 @@ class EnvRunner(Runner):
         super(EnvRunner, self).__init__(config)
 
     def run(self):
-        self.warmup()
         start = time.time()
         self.num_env_steps = 10000000
         self.episode_length = 100
@@ -46,7 +45,7 @@ class EnvRunner(Runner):
 
                 # Observe reward and next obs
                 # print('******step******', step)
-                obs, rewards, dones = self.envs.step(actions_env)
+                obs, rewards, dones = self.envs.step(actions_env, step)
 
 
                 data = (
@@ -108,14 +107,16 @@ class EnvRunner(Runner):
             # eval
             if episode % self.eval_interval == 0 and self.use_eval:
                 print('********eval*********')
-                self.eval(episode, total_num_steps)
+                self.eval(episode, total_num_steps,)
 
     def warmup(self):
         # reset env
         D_array = np.random.uniform(0.1, 0.6, 100)
         C_array = np.random.uniform(0.1, 0.6, 100)
         L_array = np.random.uniform(20, 200, 100)
-        obs = self.envs.reset()  # shape = [env_num, agent_num, obs_dim]
+        self.v_info_all = {_: [_ * 50 + 10, 0, 0, random.uniform(0.1, 0.6), random.uniform(0.1, 0.6), random.uniform(20, 200)] for
+                _ in range(1000)}
+        obs = self.envs.reset(0)  # shape = [env_num, agent_num, obs_dim]
         share_obs = []
         for o in obs:
             share_obs.append(list(chain(*o)))
@@ -245,7 +246,7 @@ class EnvRunner(Runner):
     @torch.no_grad()
     def eval(self, episode, total_num_steps):
         eval_episode_rewards = []
-        eval_obs = self.eval_envs.reset()
+        eval_obs = self.eval_envs.reset(0)
 
         eval_rnn_states = np.zeros(
             (
@@ -300,7 +301,7 @@ class EnvRunner(Runner):
                 eval_actions_env.append(eval_one_hot_action_env)
 
             # Observe reward and next obs
-            eval_obs, eval_rewards, eval_dones = self.eval_envs.step(eval_actions_env)
+            eval_obs, eval_rewards, eval_dones = self.eval_envs.step(eval_actions_env, eval_step)
             record_each_step = list(eval_actions_env) + list(eval_obs) + list(eval_rewards) + list(eval_rewards[0][0])
             record_all_steps = record_all_steps + record_each_step
             # save
@@ -397,7 +398,8 @@ class EnvRunner(Runner):
                     actions_env.append(one_hot_action_env)
 
                 # Obser reward and next obs
-                obs, rewards, dones, infos = self.envs.step(actions_env)
+                print('actions_env', actions_env)
+                obs, rewards, dones, infos = self.envs.step(actions_env, step)
                 episode_rewards.append(rewards)
 
                 rnn_states[dones == True] = np.zeros(
