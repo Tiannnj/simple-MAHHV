@@ -295,6 +295,10 @@ class vorenv(gym.Env):
                 agents_action[group * 2][0] = 1
             if agents_action[group * 2][0] == 1 and agents_action[group * 2 + 1][0] == 1:
                 agents_action[group * 2][0] = 0
+        for group in range(0, 2):
+            if agents_action[group * 2][0] == 1 and agents_action[group * 2 + 1][0] == 0:
+                ou_action[group][7] = [0]
+            if agents_action[group * 2][0] == 0 and agents_action[group * 2 + 1][0] == 1:
                 ou_action[group][7] = [1]
         num_r_rtr = np.array([[0, 0], [0, 0], [0, 0], [0, 0]])
         num_o_tra_total = np.array([[0, 0], [0, 0]])
