@@ -49,7 +49,8 @@ class MahhvDiscreteActionEnv(object):
 
 
             # observation space
-            share_obs_dim += self.signal_obs_dim
+            # share_obs_dim += self.signal_obs_dim
+            share_obs_dim = 42
             self.observation_space.append(
                 spaces.Box(
                     low=-np.inf,

@@ -138,3 +138,7 @@ SNR = (1 * 1000 * 10 ** (- PL / 10)) / ((10 ** -17.4) * (band_even_r * 10 ** 6 +
 rate_o2r = band_even_r * math.log2(1 + SNR)  # Mb/s
 delay_o2r = (0.2 * 8) / rate_o2r
 print(delay_o2r)
+
+
+x = [1,2,3,4,5]
+print(x[-2:])
