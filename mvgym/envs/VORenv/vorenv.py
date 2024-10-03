@@ -59,6 +59,7 @@ class vorenv(gym.Env):
         self.r_v = np.concatenate(([np.array(list(self.v_info.values()))[0:3, 0:6].reshape(-1)], [np.array(list(self.v_info.values()))[2:5, 0:6].reshape(-1)],
                                    [np.array(list(self.v_info.values()))[5:8, 0:6].reshape(-1)], [np.array(list(self.v_info.values()))[7:10, 0:6].reshape(-1)]))
         self.r_received = np.array([[0, 0], [0, 0], [0, 0], [0, 0]])
+        self.r_received_single = np.array([[0], [0], [0], [0]])
         self.r_assign = np.array([[0, 0], [0, 0], [0, 0], [0, 0]])
         self.r_info = {_: np.concatenate((self.r_location[_], self.r_v[_], self.r_received[_], self.r_assign[_])) for _ in range(self.n_r_agents)}
         self.ru_action_space = MultiAgentActionSpace([spaces.Discrete(4) for _ in range(self.n_r_agents)])
@@ -134,11 +135,11 @@ class vorenv(gym.Env):
         total_obs = []
         # 每个RU状态生成
         for agent_r in range(self.n_r_agents):
-            _agent_r_obs = np.zeros(25)
+            _agent_r_obs = np.zeros(24)
             _agent_r_obs[0: 3] = self.r_location[agent_r]  # RU location
             _agent_r_obs[3: 21] = self.r_v[agent_r]  # tasks' information
-            _agent_r_obs[21: 23] = self.r_received[agent_r]  # number of tasks RU and its nearby RU chooses to receive
-            _agent_r_obs[23: 25] = self.r_assign[agent_r]   # number of tasks RU offloads to each MeNB
+            _agent_r_obs[21: 22] = self.r_received_single[agent_r]  # number of tasks RU and its nearby RU chooses to receive
+            _agent_r_obs[22: 24] = self.r_assign[agent_r]   # number of tasks RU offloads to each MeNB
             _agent_r_obs = _agent_r_obs.flatten().tolist()
             total_obs.append(_agent_r_obs)
         return total_obs
@@ -180,8 +181,8 @@ class vorenv(gym.Env):
             _agent_r_obs = np.zeros(25)
             _agent_r_obs[0: 3] = self.r_location[agent_r]  # RU location
             _agent_r_obs[3: 21] = self.r_v[agent_r]  # tasks' information
-            _agent_r_obs[21: 23] = self.r_received[agent_r]  # number of tasks assigned to RSU associated to it
-            _agent_r_obs[23: 25] = self.r_assign[agent_r]
+            _agent_r_obs[21: 22] = self.r_received_single[agent_r]  # number of tasks assigned to RSU associated to it
+            _agent_r_obs[22: 24] = self.r_assign[agent_r]
             total_obs.append(_agent_r_obs)
 #            print('_agent_r_obs', _agent_r_obs)
 
@@ -231,6 +232,7 @@ class vorenv(gym.Env):
                                    [np.array(list(self.v_info.values()))[5:8, 0:6].reshape(-1)],
                                    [np.array(list(self.v_info.values()))[7:10, 0:6].reshape(-1)]))
         self.r_received = np.array([[0, 0], [0, 0], [0, 0], [0, 0]])
+        self.r_received_single = np.array([[0], [0], [0], [0]])
         self.r_assign = np.array([[0, 0], [0, 0], [0, 0], [0, 0]])
         self.r_info = {_: np.concatenate((self.r_location[_], self.r_v[_], self.r_received[_], self.r_assign[_])) for _ in range(self.n_r_agents)}
 #        print('self.r_info', self.r_info)
@@ -298,6 +300,8 @@ class vorenv(gym.Env):
                 ou_action[group][7] = [0]
             if agents_action[group * 2][0] == 0 and agents_action[group * 2 + 1][0] == 1:
                 ou_action[group][7] = [1]
+
+        o_tra_pre = np.array([[0, 0], [0, 0]])
         num_r_rtr = np.array([[0, 0], [0, 0], [0, 0], [0, 0]])
         num_o_tra_total = np.array([[0, 0], [0, 0]])
         # take actions for OU agents
@@ -307,6 +311,7 @@ class vorenv(gym.Env):
             # get the observation for OU
             o_pre_state = self.Mahhv_get_OU_obs()[o_agent_num]
             num_o_receive = self.Mahhv_get_OU_obs()[o_agent_num][-4:-2]
+            o_tra_pre[o_agent_num] = num_o_receive.copy()
             num_o_tra = o_pre_state[-2:]
             # communication channel setting
             for v in range(0, 5):
@@ -413,7 +418,7 @@ class vorenv(gym.Env):
             band_r2m = 40
             # get the observation for RU
             r_pre_state = self.Mahhv_get_agent_obs()[r_agent_num]
-            pre_num_r_receive = r_pre_state[21:23].copy()
+            pre_num_r_receive = o_tra_pre[r_agent_num // 2]
             new_num_r_receive = pre_num_r_receive.copy()
             " tasks amount assigned to RU and its nearby RU until TS t"
             for x in range(0, 2):
@@ -432,7 +437,7 @@ class vorenv(gym.Env):
             for v in range(0, 3):
                 r_pre_state[3 + v * 6: 3 + v * 6 + 6] = np.multiply(r_pre_state[3 + v * 6: 3 + v * 6 + 6], r_receive_new[r_agent_num][v])
             " tasks amount assigned to each MeNB "
-            num_r_rtr[r_agent_num] = r_pre_state[23:25]
+            num_r_rtr[r_agent_num] = r_pre_state[22:24]
             # communication channel setting
             for v in range(0, 3):
                 # handle the task received by OU 1 assigned to RU 0 or RU 1
@@ -475,6 +480,7 @@ class vorenv(gym.Env):
 
             # The fairness in the RU observation state for receiving has to be updated
             self.r_received[r_agent_num] = new_num_r_receive
+            self.r_received_single[r_agent_num] = new_num_r_receive[r_agent_num % 2]
             num_r_rec[r_agent_num] = new_num_r_receive
 
             # The fairness in the RU observation state for re_tra has to be updated
@@ -526,6 +532,7 @@ class vorenv(gym.Env):
             self.o_tra[o] = num_o_tra_total[o]
         for r in range(0, self.n_r_agents):
             self.r_received[r] = num_r_rec[r]
+            self.r_received_single[r] = num_r_rec[r][r % 2]
             self.r_assign[r] = num_r_rtr[r]
         return self.Mahhv_get_agent_obs(), rewards, self._agent_dones
 
