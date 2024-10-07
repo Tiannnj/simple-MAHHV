@@ -232,7 +232,7 @@ def get_config():
     parser.add_argument(
         "--share_policy",
         action="store_false",
-        default=True,
+        default=False,
         help="Whether agent share the same policy",
     )
     parser.add_argument(

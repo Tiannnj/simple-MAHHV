@@ -123,12 +123,12 @@ class EnvRunner(Runner):
         share_obs = np.array(share_obs)  # shape = [env_num, agent_num * obs_dim]
 
         share_obs_group1 = np.array(list(obs[0][0][0:3])+ list(obs[0][1][0:3]) + list(np.array(obs[0][0][3:21]))+
-                            list(np.array(obs[0][1][9:21]))+ list(np.array(obs[0][0][-3:-2]))+ list(np.array(obs[0][1][-3:-2])) +
+                            list(np.array(obs[0][1][9:21]))+ list([np.array(obs[0][0][-3])])+ list([np.array(obs[0][1][-3])]) +
                             list(np.array(obs[0][0][-2:]))+list(np.array(obs[0][1][-2:])))
         share_obs_group1 = np.array(share_obs_group1)
 
         share_obs_group2 = np.array(list(obs[0][2][0:3]) + list(obs[0][3][0:3]) + list(np.array(obs[0][2][3:21]))
-                            + list( np.array(obs[0][3][9:21])) + list(np.array(obs[0][2][-3:-2])) + list(np.array(obs[0][3][-3:-2])) +
+                            + list( np.array(obs[0][3][9:21])) + list([np.array(obs[0][2][-3])]) + list([np.array(obs[0][3][-3])]) +
                             list(np.array(obs[0][2][-2:])) + list(np.array(obs[0][3][-2:])))
         share_obs_group2 = np.array(share_obs_group2)
 
@@ -246,15 +246,18 @@ class EnvRunner(Runner):
             share_obs.append(list(chain(*o)))
         share_obs = np.array(share_obs)
 
-        share_obs_group1 = np.array(list(obs[0][0][0:3])+ list(obs[0][1][0:3]) + list(np.array(obs[0][0][3:21]))+
-                            list(np.array(obs[0][1][9:21]))+ list(np.array(obs[0][0][-4:-2]))+
-                            list(np.array(obs[0][0][-2:]))+list(np.array(obs[0][1][-2:])))
+        share_obs_group1 = np.array(list(obs[0][0][0:3]) + list(obs[0][1][0:3]) + list(np.array(obs[0][0][3:21])) +
+                                    list(np.array(obs[0][1][9:21])) + list([np.array(obs[0][0][-3])]) + list(
+            [np.array(obs[0][1][-3])]) +
+                                    list(np.array(obs[0][0][-2:])) + list(np.array(obs[0][1][-2:])))
         share_obs_group1 = np.array(share_obs_group1)
 
         share_obs_group2 = np.array(list(obs[0][2][0:3]) + list(obs[0][3][0:3]) + list(np.array(obs[0][2][3:21]))
-                            + list( np.array(obs[0][3][9:21])) + list(np.array(obs[0][2][-4:-2])) +
-                            list(np.array(obs[0][2][-2:])) + list(np.array(obs[0][3][-2:])))
+                                    + list(np.array(obs[0][3][9:21])) + list([np.array(obs[0][2][-3])]) + list(
+            [np.array(obs[0][3][-3])]) +
+                                    list(np.array(obs[0][2][-2:])) + list(np.array(obs[0][3][-2:])))
         share_obs_group2 = np.array(share_obs_group2)
+
 
         for agent_id in range(0, 2):
             if not self.use_centralized_V:
